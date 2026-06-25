@@ -1,10 +1,14 @@
 var express = require("express");
 var cors = require("cors");
 var https = require("https");
+var path = require("path");
 
 var app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json());
+
+// Serve the iPad intake form (public/index.html) at GET /
+app.use(express.static(path.join(__dirname, "public")));
 
 var SM_API_KEY = (process.env.SM_API_KEY || "").trim();
 var SM_BASE = "api.shopmonkey.cloud";
@@ -39,20 +43,37 @@ function smPost(path, body) {
       });
     });
     req.on("error", reject);
+    req.setTimeout(15000, function() {
+      req.destroy(new Error("Shopmonkey request timed out"));
+    });
     req.write(data);
     req.end();
   });
 }
 
 app.post("/checkin", function(req, res) {
-  var b = req.body;
+  var b = req.body || {};
   var isFleet = b.customerType === "fleet";
 
+  // Basic validation before hitting the POS
+  if (isFleet) {
+    if (!b.companyName) {
+      return res.status(400).json({ error: "companyName is required for fleet customers" });
+    }
+  } else if (!b.firstName || !b.lastName) {
+    return res.status(400).json({ error: "firstName and lastName are required" });
+  }
+  if (!b.year || isNaN(Number(b.year))) {
+    return res.status(400).json({ error: "A valid vehicle year is required" });
+  }
+  if (!b.make || !b.model) {
+    return res.status(400).json({ error: "Vehicle make and model are required" });
+  }
+
+  // Fleet customers must NOT include firstName/lastName (Shopmonkey rejects them)
   var customerPayload = isFleet ? {
     customerType: "Fleet",
     companyName: b.companyName,
-    firstName: b.firstName,
-    lastName: b.lastName,
     address1: b.address,
     city: b.city,
     postalCode: b.postcode,

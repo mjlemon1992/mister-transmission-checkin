@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mister Transmission" />
+  <title>Mister Transmission — Customer Check-In</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f2f4f7;
+      color: #1a1a1a;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 24px 20px 64px; }
+    header { text-align: center; margin-bottom: 24px; }
+    header h1 { font-size: 26px; margin: 8px 0 4px; color: #c8102e; }
+    header p { margin: 0; color: #555; font-size: 15px; }
+    .card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .card h2 { font-size: 16px; margin: 0 0 16px; color: #333; }
+    label { display: block; font-size: 14px; font-weight: 600; margin: 0 0 6px; color: #333; }
+    input, select {
+      width: 100%; padding: 14px; font-size: 17px; border: 1px solid #cfd4dc;
+      border-radius: 10px; background: #fff; margin-bottom: 16px; appearance: none;
+    }
+    input:focus, select:focus { outline: none; border-color: #c8102e; }
+    .row { display: flex; gap: 12px; }
+    .row > div { flex: 1; }
+    .toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+    .toggle button {
+      flex: 1; padding: 14px; font-size: 16px; font-weight: 600; border: 1px solid #cfd4dc;
+      background: #fff; border-radius: 10px; color: #333;
+    }
+    .toggle button.active { background: #c8102e; color: #fff; border-color: #c8102e; }
+    .check { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+    .check input { width: 24px; height: 24px; margin: 2px 0 0; flex: 0 0 auto; }
+    .check label { font-weight: 400; font-size: 14px; color: #444; margin: 0; }
+    .consent { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 16px; }
+    .submit {
+      width: 100%; padding: 18px; font-size: 19px; font-weight: 700; color: #fff;
+      background: #c8102e; border: none; border-radius: 12px;
+    }
+    .submit:disabled { background: #c9ccd2; }
+    .hidden { display: none !important; }
+    #success { text-align: center; padding: 60px 24px; }
+    #success .tick { font-size: 64px; }
+    #success h2 { color: #1a8a3a; font-size: 26px; margin: 12px 0; }
+    #success p { color: #555; font-size: 16px; }
+    #errorBox { background: #fde8e8; color: #9b1c1c; padding: 14px; border-radius: 10px; margin-bottom: 16px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Mister Transmission</h1>
+      <p>Welcome — please check in below</p>
+    </header>
+
+    <form id="form">
+      <div id="errorBox" class="hidden"></div>
+
+      <div class="card">
+        <h2>Customer Type</h2>
+        <div class="toggle">
+          <button type="button" id="btnIndividual" class="active" data-type="individual">Individual</button>
+          <button type="button" id="btnFleet" data-type="fleet">Fleet / Company</button>
+        </div>
+
+        <div id="companyField" class="hidden">
+          <label>Company Name</label>
+          <input type="text" id="companyName" autocomplete="organization" />
+        </div>
+
+        <div id="nameFields">
+          <div class="row">
+            <div>
+              <label>First Name</label>
+              <input type="text" id="firstName" autocomplete="given-name" />
+            </div>
+            <div>
+              <label>Last Name</label>
+              <input type="text" id="lastName" autocomplete="family-name" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Contact</h2>
+        <label>Phone</label>
+        <input type="tel" id="phone" autocomplete="tel" />
+        <label>Email</label>
+        <input type="email" id="email" autocomplete="email" />
+        <label>Address</label>
+        <input type="text" id="address" autocomplete="address-line1" />
+        <div class="row">
+          <div>
+            <label>City</label>
+            <input type="text" id="city" autocomplete="address-level2" />
+          </div>
+          <div>
+            <label>Postal Code</label>
+            <input type="text" id="postcode" autocomplete="postal-code" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Vehicle</h2>
+        <div class="row">
+          <div>
+            <label>Year</label>
+            <input type="number" id="year" inputmode="numeric" min="1900" max="2100" />
+          </div>
+          <div>
+            <label>Make</label>
+            <input type="text" id="make" />
+          </div>
+        </div>
+        <label>Model</label>
+        <input type="text" id="model" />
+        <div class="row">
+          <div>
+            <label>Colour</label>
+            <select id="color">
+              <option value="">Select…</option>
+              <option>White</option><option>Silver</option><option>Gray</option>
+              <option>Black</option><option>Blue</option><option>Red</option>
+              <option>Brown</option><option>Burgundy</option><option>Tan</option>
+              <option>Gold</option><option>Green</option><option>Yellow</option>
+              <option>Orange</option><option>Pink</option><option>Purple</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div>
+            <label>Size</label>
+            <select id="vsize">
+              <option value="LightDuty">Light Duty</option>
+              <option value="HeavyDuty">Heavy Duty</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>A Few More Things</h2>
+        <label>How did you hear about us?</label>
+        <select id="source">
+          <option value="">Select…</option>
+          <option value="google">Google</option>
+          <option value="referral">Friend / Referral</option>
+          <option value="returning">Returning Customer</option>
+          <option value="signage">Drove By / Signage</option>
+          <option value="social">Social Media</option>
+          <option value="other">Other</option>
+        </select>
+
+        <p class="consent">
+          By submitting, you consent to Mister Transmission contacting you by phone, email,
+          or text regarding your vehicle and service. We do not share your information with
+          third parties.
+        </p>
+
+        <div class="check">
+          <input type="checkbox" id="compliance" />
+          <label for="compliance">
+            I confirm the vehicle information above is accurate and the vehicle is in a
+            roadworthy, compliant condition to the best of my knowledge.
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class="submit" id="submitBtn" disabled>Check In</button>
+    </form>
+
+    <div id="success" class="hidden">
+      <div class="tick">✅</div>
+      <h2>You're checked in!</h2>
+      <p>Thanks — please hand the iPad back to a team member. We'll be with you shortly.</p>
+    </div>
+  </div>
+
+  <script>
+    var type = "individual";
+    var btnInd = document.getElementById("btnIndividual");
+    var btnFleet = document.getElementById("btnFleet");
+    var companyField = document.getElementById("companyField");
+    var nameFields = document.getElementById("nameFields");
+    var compliance = document.getElementById("compliance");
+    var submitBtn = document.getElementById("submitBtn");
+    var errorBox = document.getElementById("errorBox");
+
+    function setType(t) {
+      type = t;
+      btnInd.classList.toggle("active", t === "individual");
+      btnFleet.classList.toggle("active", t === "fleet");
+      companyField.classList.toggle("hidden", t !== "fleet");
+    }
+    btnInd.addEventListener("click", function() { setType("individual"); });
+    btnFleet.addEventListener("click", function() { setType("fleet"); });
+
+    compliance.addEventListener("change", function() {
+      submitBtn.disabled = !compliance.checked;
+    });
+
+    function val(id) { return (document.getElementById(id).value || "").trim(); }
+
+    document.getElementById("form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      errorBox.classList.add("hidden");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Checking in…";
+
+      var payload = {
+        customerType: type,
+        firstName: val("firstName"),
+        lastName: val("lastName"),
+        companyName: val("companyName"),
+        address: val("address"),
+        city: val("city"),
+        postcode: val("postcode"),
+        phone: val("phone"),
+        email: val("email"),
+        year: val("year"),
+        make: val("make"),
+        model: val("model"),
+        color: val("color") || "Other",
+        vsize: val("vsize") || "LightDuty",
+        source: val("source") || "other"
+      };
+
+      fetch("/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(function(r) { return r.json().then(function(j) { return { ok: r.ok, j: j }; }); })
+      .then(function(res) {
+        if (!res.ok || !res.j.success) {
+          throw new Error(res.j.error || "Something went wrong. Please ask a team member for help.");
+        }
+        document.getElementById("form").classList.add("hidden");
+        document.getElementById("success").classList.remove("hidden");
+        window.scrollTo(0, 0);
+      })
+      .catch(function(err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove("hidden");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Check In";
+        window.scrollTo(0, 0);
+      });
+    });
+  </script>
+</body>
+</html>
