@@ -5,9 +5,50 @@ var path = require("path");
 
 var app = express();
 app.use(cors({ origin: "*" }));
-app.use(express.json());
+app.use(express.json({ limit: "6mb" }));
 
 // Serve the iPad intake form (public/index.html) at GET /
+// Generic Shopmonkey request (any method) — used for post-order updates.
+function smRequest(method, apiPath, body) {
+  return new Promise(function(resolve, reject) {
+    var data = body ? JSON.stringify(body) : "";
+    var options = {
+      hostname: SM_BASE, port: 443, path: "/v3" + apiPath, method: method,
+      headers: {
+        "Authorization": "Bearer " + SM_API_KEY,
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(data)
+      }
+    };
+    var req = https.request(options, function(res) {
+      var chunks = [];
+      res.on("data", function(c) { chunks.push(c); });
+      res.on("end", function() {
+        var txt = Buffer.concat(chunks).toString();
+        if (res.statusCode >= 400) reject(new Error("Shopmonkey " + method + " " + apiPath + " -> " + res.statusCode + ": " + txt));
+        else { try { resolve(JSON.parse(txt)); } catch(e) { resolve({}); } }
+      });
+    });
+    req.on("error", reject);
+    req.setTimeout(15000, function() { req.destroy(new Error("Shopmonkey request timed out")); });
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
+// Best-effort: write the signed declaration onto the order's internal notes
+// after creation (non-blocking). Endpoint/field to confirm on a live test.
+function attachDeclaration(orderId, b, isFleet) {
+  if (!orderId) return Promise.resolve();
+  var signedBy = isFleet ? (b.companyName || "") : ((b.firstName || "") + " " + (b.lastName || "")).trim();
+  var hasSig = !!b.signature;
+  var note = "CUSTOMER CHECK-IN DECLARATION\nSigned by: " + signedBy +
+    "\nSigned at: " + new Date().toISOString() + "\n\n" + (b.declaration || "") +
+    "\n\nSignature captured at check-in: " + (hasSig ? "YES" : "NO");
+  console.log("attachDeclaration: order " + orderId + (hasSig ? " (signature ~" + Math.round(b.signature.length/1024) + "KB)" : " (no signature)"));
+  return smRequest("PATCH", "/order/" + orderId, { internalNotes: note });
+}
+
 app.use(express.static(path.join(__dirname, "public")));
 
 var SM_API_KEY = (process.env.SM_API_KEY || "").trim();
@@ -126,6 +167,9 @@ app.post("/checkin", function(req, res) {
       customerId: customerId,
       vehicleId: vehicleId,
       orderId: orderId
+    });
+    attachDeclaration(orderId, b, isFleet).catch(function(e) {
+      console.error("attachDeclaration failed:", e && e.message);
     });
   })
   .catch(function(err) {
