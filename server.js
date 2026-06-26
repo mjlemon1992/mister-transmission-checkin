@@ -38,15 +38,18 @@ function smRequest(method, apiPath, body) {
 
 // Best-effort: write the signed declaration onto the order's internal notes
 // after creation (non-blocking). Endpoint/field to confirm on a live test.
-function attachDeclaration(orderId, b, isFleet) {
-  if (!orderId) return Promise.resolve();
+function attachDeclaration(orderId, customerId, b, isFleet) {
+  if (!orderId || !customerId) return Promise.resolve();
   var signedBy = isFleet ? (b.companyName || "") : ((b.firstName || "") + " " + (b.lastName || "")).trim();
-  var hasSig = !!b.signature;
-  var note = "CUSTOMER CHECK-IN DECLARATION\nSigned by: " + signedBy +
-    "\nSigned at: " + new Date().toISOString() + "\n\n" + (b.declaration || "") +
-    "\n\nSignature captured at check-in: " + (hasSig ? "YES" : "NO");
-  console.log("attachDeclaration: order " + orderId + (hasSig ? " (signature ~" + Math.round(b.signature.length/1024) + "KB)" : " (no signature)"));
-  return smRequest("PATCH", "/order/" + orderId, { internalNotes: note });
+  var text = "CUSTOMER CHECK-IN DECLARATION — agreed & signed at check-in\n" +
+    "Signed by: " + signedBy + "\nDate: " + new Date().toISOString() + "\n\n" +
+    (b.declaration || "") + "\n\nSignature captured on the check-in form: " + (b.signature ? "YES" : "NO");
+  // Internal note on the order's message thread (Shopmonkey has no public file
+  // upload, so the drawn signature image cannot be attached via the API).
+  return smRequest("POST", "/message", {
+    customerId: customerId, orderId: orderId, text: text,
+    internal: true, sendEmail: false, sendSms: false, contentType: "PlainText"
+  });
 }
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -168,7 +171,7 @@ app.post("/checkin", function(req, res) {
       vehicleId: vehicleId,
       orderId: orderId
     });
-    attachDeclaration(orderId, b, isFleet).catch(function(e) {
+    attachDeclaration(orderId, customerId, b, isFleet).catch(function(e) {
       console.error("attachDeclaration failed:", e && e.message);
     });
   })
