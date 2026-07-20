@@ -7,6 +7,8 @@ Backend for the **Mister Transmission** iPad customer check-in ("booking") app.
 - **`server.js`** — Express 4 server. Serves `public/index.html` at `/` and handles
   `POST /checkin` → creates a customer + vehicle + repair order in **Shopmonkey**.
 - **`public/index.html`** — copy of the intake form.
+- **`voip/`** — VoIP.ms call-intelligence module (missed-call Slack alerts +
+  CASL-guarded SMS text-back). Opt-in via `VOIP_ENABLED=1`; see `voip/README.md`.
 
 ## ⚠️ Live deployment note
 As of 2026-06-25 the live Railway backend service is deploying the **`mister-transmission-form`**
