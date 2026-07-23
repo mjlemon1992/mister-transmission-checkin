@@ -15,6 +15,10 @@ lifted into its own service later without surgery.
 2. For each new missed inbound call on a business DID: transcribes the voicemail
    (if any), sends a CASL-guarded text-back (business hours only), and posts one
    Slack card to `#marketing-metrics`. One card per missed call, ever.
+3. Each morning after 7am local: posts a per-location heartbeat card with
+   yesterday's numbers (calls / missed / voicemails / text-backs). This is also
+   the liveness check — **no card by 8am means the pipeline is broken** (a dead
+   cron otherwise looks identical to a quiet phone day).
 
 **Text-back routing (verified 2026-07-19):**
 - Caller matches a Shopmonkey customer (`POST /v3/customer/phone_number/search`)
@@ -48,6 +52,10 @@ lifted into its own service later without surgery.
 2. **Seed Kelowna:** edit `voip/seed.kelowna.json` (real DIDs, sub-account names,
    voicemail mailbox ID, confirmed store hours), then
    `npm run voip:seed voip/seed.kelowna.json`. Re-running updates in place.
+   The seed ships with `textback_enabled: false` — **observe-only mode**: CDRs,
+   Slack cards, transcripts and heartbeats all run, but no SMS goes to real
+   customers. Run the first week like this, and only after the go-live checks
+   below all pass, flip it to `true` and re-run the seeder.
 3. **VoIP.ms portal:**
    - Main Menu → SOAP/REST API: enable, set API password, whitelist the caller IP.
      ⚠️ **Railway egress IPs are not static.** Options: VoIP.ms's allow-all IP
@@ -117,6 +125,7 @@ set its callback URL (step 3 above).
 | Duplicate-looking Slack SMS-reply posts | VoIP.ms retries the callback every 30 min unless it got `ok` — check the endpoint is reachable |
 | Text-back rows `status='failed'` in `voip_sms_log` | error column has the API response; VoIP.ms API SMS is capped at **100/day** account-wide |
 | Cycle logs `previous cycle still running` | one slow cycle (big backfill, slow Whisper) — next tick catches up; persistent = investigate |
+| No heartbeat card by 8am | the pipeline is down — check Railway logs for `[voip] cycle failed` / `ip_not_enabled`; the heartbeat is the canary, treat its absence as an outage |
 | Voicemail transcript missing | `voicemail_mailbox` not set for the location, VM outside INBOX, or caller-ID mismatch (fuzzy match window is ±15 min) |
 
 ## Planned next (Phase 1.5 — see PLAN-text-capture.md)

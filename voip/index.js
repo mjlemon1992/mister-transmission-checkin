@@ -4,6 +4,7 @@
 
 const { ingestAllLocations } = require("./jobs/ingest");
 const { processMissedCalls } = require("./jobs/missed");
+const { postHeartbeats } = require("./jobs/heartbeat");
 const { registerSmsCallback } = require("./jobs/smsCallback");
 
 const CYCLE_MINUTES = Number(process.env.VOIP_CRON_MINUTES || 15);
@@ -17,8 +18,10 @@ async function cycle() {
   try {
     const ingested = await ingestAllLocations();
     const processed = await processMissedCalls();
+    const heartbeats = await postHeartbeats();
     console.log(`[voip] cycle done in ${Date.now() - t0}ms — ` +
-      `${ingested} CDRs upserted, ${processed} missed calls processed`);
+      `${ingested} CDRs upserted, ${processed} missed calls processed` +
+      (heartbeats ? `, ${heartbeats} heartbeat(s) posted` : ""));
   } catch (err) {
     console.error("[voip] cycle failed:", err.message);
   } finally {

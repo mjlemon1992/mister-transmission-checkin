@@ -13,7 +13,7 @@
     "sun": null
   },
   "textback_template": "Sorry we missed your call at Mister Transmission Kelowna — reply here and we'll get right back to you, or we'll call you shortly.",
-  "textback_enabled": true,
+  "textback_enabled": false,
   "voicemail_mailbox": null,
   "dids": [
     { "did": "+1250XXXXXXX", "source_label": "gbp", "sms_enabled": true },
