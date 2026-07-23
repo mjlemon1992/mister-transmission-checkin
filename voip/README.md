@@ -119,6 +119,12 @@ set its callback URL (step 3 above).
 | Cycle logs `previous cycle still running` | one slow cycle (big backfill, slow Whisper) — next tick catches up; persistent = investigate |
 | Voicemail transcript missing | `voicemail_mailbox` not set for the location, VM outside INBOX, or caller-ID mismatch (fuzzy match window is ±15 min) |
 
+## Planned next (Phase 1.5 — see PLAN-text-capture.md)
+Text-first lead capture: automated first-contact auto-reply on tracked DIDs
++ a Slack reply bridge so staff answer leads from the Slack thread (SMS goes
+out from the same DID the customer texted). Decided 2026-07-22; neither
+blocks Phase 1 go-live.
+
 ## Phase 2 notes
 `shopmonkey_customer_id` / `advisor_resolved` columns, `voip_recordings.r2_key`,
 and `voip_transcripts.scoring` are already in the schema — Phase 2 (customer
