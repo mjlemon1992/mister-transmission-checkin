@@ -1,0 +1,25 @@
+{
+  "name": "Mister Transmission Kelowna",
+  "voipms_account": "main",
+  "slack_channel": "#marketing-metrics",
+  "timezone": "America/Vancouver",
+  "business_hours": {
+    "mon": { "open": "08:00", "close": "17:00" },
+    "tue": { "open": "08:00", "close": "17:00" },
+    "wed": { "open": "08:00", "close": "17:00" },
+    "thu": { "open": "08:00", "close": "17:00" },
+    "fri": { "open": "08:00", "close": "17:00" },
+    "sat": null,
+    "sun": null
+  },
+  "textback_template": "Sorry we missed your call at Mister Transmission Kelowna — reply here and we'll get right back to you, or we'll call you shortly.",
+  "textback_enabled": false,
+  "voicemail_mailbox": null,
+  "dids": [
+    { "did": "+1250XXXXXXX", "source_label": "gbp", "sms_enabled": true },
+    { "did": "+1250XXXXXXX", "source_label": "website", "sms_enabled": true }
+  ],
+  "sub_accounts": [
+    { "voipms_subaccount": "ACCOUNT_frontdesk", "default_advisor": null }
+  ]
+}

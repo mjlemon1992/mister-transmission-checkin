@@ -185,6 +185,12 @@ app.get("/health", function(req, res) {
   res.json({ status: "ok" });
 });
 
+// VoIP call-intelligence module (voip/). Opt-in via env so the check-in app
+// keeps deploying unchanged until DATABASE_URL + VoIP.ms creds are configured.
+if (process.env.VOIP_ENABLED === "1") {
+  require("./voip").start(app);
+}
+
 app.listen(PORT, function() {
   console.log("Server running on port " + PORT);
 });
