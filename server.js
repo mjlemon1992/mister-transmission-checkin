@@ -319,6 +319,53 @@ if (process.env.VOIP_ENABLED === "1" && fs.existsSync(path.join(__dirname, "voip
   require("./voip").start(app);
 }
 
+// TEMPORARY diagnostics — note-endpoint discovery + test-record cleanup.
+// Remove after the Notes question is resolved and test data is purged.
+function smTry2(method, apiPath, body) {
+  return smRequest(method, apiPath, body).then(
+    function(r) { return { ok: true, m: method, p: apiPath, data: r && r.data }; },
+    function(e) { return { ok: false, m: method, p: apiPath, err: String(e.message).slice(0, 220) }; }
+  );
+}
+app.get("/__np", function(req, res) {
+  if (req.query.t !== "np-x9q4w") return res.status(403).json({ error: "no" });
+  var oid = req.query.orderId;
+  var txt = "DIAG note probe " + Date.now();
+  Promise.all([
+    smTry2("GET", "/note?limit=2"),
+    smTry2("GET", "/notes?limit=2"),
+    smTry2("GET", "/order_note?limit=2"),
+    smTry2("GET", "/order/" + oid + "/note"),
+    smTry2("GET", "/order/" + oid + "/notes"),
+    smTry2("POST", "/note", { orderId: oid, text: txt }),
+    smTry2("POST", "/order/" + oid + "/note", { text: txt }),
+    smTry2("POST", "/order/" + oid + "/notes", { text: txt })
+  ]).then(function(r) {
+    r.forEach(function(x) {
+      if (x.ok && Array.isArray(x.data) && x.data[0]) x.data = { firstKeys: Object.keys(x.data[0]) };
+    });
+    res.json(r);
+  });
+});
+// Deletes ONLY the four hardcoded ZZTEST records created during testing.
+var TEST_RECORDS = [
+  { label: "ZZTEST",  customerId: "a561b7a1-db3f-423b-a437-8ce05f53da30", orderId: "0db42338-c699-457d-ad7d-d15580353e8e" },
+  { label: "ZZTEST2", customerId: "982aa41b-4256-4d33-b296-1e6de0bfd483", orderId: "fc82add7-a2e3-4a18-ac2a-431497916c83" },
+  { label: "ZZTEST3", customerId: "0b8039d3-378d-4244-acfa-b8167da534f6", orderId: "81d72dd8-a4ad-4df7-998d-214a58905180" },
+  { label: "ZZTEST4", customerId: "c9f1592a-bf4f-4c1a-bcf8-5c9bbc60e597", orderId: "7b6e40d8-af4a-4bb0-a9e7-534430819945" }
+];
+app.get("/__cleanup", function(req, res) {
+  if (req.query.t !== "np-x9q4w") return res.status(403).json({ error: "no" });
+  var work = [];
+  TEST_RECORDS.forEach(function(r) {
+    work.push(smTry2("DELETE", "/order/" + r.orderId, { reason: "test record cleanup" }));
+    work.push(smTry2("DELETE", "/customer/" + r.customerId, { reason: "test record cleanup" }));
+  });
+  Promise.all(work).then(function(results) {
+    res.json(results.map(function(x) { return { m: x.m, p: x.p.slice(0, 60), ok: x.ok, err: x.err }; }));
+  });
+});
+
 if (require.main === module) {
   app.listen(PORT, function() {
     console.log("Server running on port " + PORT);
